@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadPatterns();
   await loadReportingSettings();
   await loadCloseTabSettings();
+  await loadCurrentTabUrl();
 
   // Hide warning banner after 5 seconds with fade-out
   setTimeout(() => {
@@ -40,7 +41,32 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Reset button handler
   document.getElementById('resetBtn').addEventListener('click', resetAll);
+
+  // Test URL button handler
+  document.getElementById('testUrlBtn').addEventListener('click', testUrl);
+
+  // Allow Enter key to test URL
+  document.getElementById('testUrl').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      testUrl();
+    }
+  });
 });
+
+// Load current tab URL into test input
+async function loadCurrentTabUrl() {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab && tab.url) {
+      // Only prefill if it's a valid http/https URL
+      if (tab.url.startsWith('http://') || tab.url.startsWith('https://')) {
+        document.getElementById('testUrl').value = tab.url;
+      }
+    }
+  } catch (error) {
+    console.error('Error loading current tab URL:', error);
+  }
+}
 
 // Load patterns from storage and display them
 async function loadPatterns() {
@@ -91,13 +117,13 @@ async function addPattern() {
   const pattern = input.value.trim();
 
   if (!pattern) {
-    showMessage('Please enter a URL pattern', 'error');
+    showTestResult('Please enter a URL pattern', 'error');
     return;
   }
 
   // Validate pattern format
   if (!isValidPattern(pattern)) {
-    showMessage('Invalid pattern format. Use patterns like *://*.example.com/*', 'error');
+    showTestResult('Invalid pattern format. Use patterns like *://*.example.com/*', 'error');
     return;
   }
 
@@ -106,7 +132,7 @@ async function addPattern() {
 
   // Check for duplicates
   if (patterns.includes(pattern)) {
-    showMessage('Pattern already exists', 'error');
+    showTestResult('Rule already exists', 'error');
     return;
   }
 
@@ -417,5 +443,134 @@ async function resetAll() {
   } catch (error) {
     console.error('Error resetting settings:', error);
     showMessage('Error resetting settings', 'error');
+  }
+}
+
+// Test if a URL would be blocked by the pattern in the input field
+async function testUrl() {
+  const testUrlInput = document.getElementById('testUrl');
+  const patternInput = document.getElementById('urlPattern');
+  const url = testUrlInput.value.trim();
+  const pattern = patternInput.value.trim();
+
+  if (!url) {
+    showTestResult('Please enter a URL to test', 'info');
+    return;
+  }
+
+  if (!pattern) {
+    showTestResult('Please enter a pattern first', 'info');
+    return;
+  }
+
+  // Validate URL format
+  try {
+    new URL(url);
+  } catch (e) {
+    showTestResult('Invalid URL format. Please enter a valid URL (e.g., https://example.com/page)', 'info');
+    return;
+  }
+
+  // Validate pattern format
+  if (!isValidPattern(pattern)) {
+    showTestResult('Invalid pattern format. Use patterns like *://*.example.com/*', 'error');
+    return;
+  }
+
+  // Test the input pattern against the URL
+  if (matchesPattern(url, pattern)) {
+    showTestResult(`Pattern matched`, 'blocked');
+  } else {
+    showTestResult('Pattern not matched', 'allowed');
+  }
+}
+
+// Show test result with appropriate styling
+function showTestResult(message, type) {
+  const testResultDiv = document.getElementById('testResult');
+  testResultDiv.textContent = message;
+  testResultDiv.className = `test-result ${type}`;
+  testResultDiv.style.display = 'block';
+
+  // Auto-dismiss after 3 seconds
+  setTimeout(() => {
+    testResultDiv.style.display = 'none';
+  }, 3000);
+}
+
+// Check if a URL matches a pattern (Chrome URL match pattern format)
+function matchesPattern(url, pattern) {
+  try {
+    // Parse the pattern: <scheme>://<host><path>
+    const patternParts = pattern.match(/^(\*|https?|file|ftp):\/\/([^\/]+)(\/.*)?$/);
+    if (!patternParts) {
+      console.log('Pattern parse failed:', pattern);
+      return false;
+    }
+
+    const [, schemePattern, hostPattern, pathPattern = '/*'] = patternParts;
+    console.log('Parsing pattern:', pattern);
+    console.log('Pattern parts:', { schemePattern, hostPattern, pathPattern });
+
+    // Parse the URL
+    let urlObj;
+    try {
+      urlObj = new URL(url);
+    } catch (e) {
+      return false;
+    }
+
+    console.log('URL parts:', {
+      protocol: urlObj.protocol,
+      hostname: urlObj.hostname,
+      pathname: urlObj.pathname
+    });
+
+    // Check scheme
+    if (schemePattern !== '*' && schemePattern !== urlObj.protocol.slice(0, -1)) {
+      console.log('Scheme mismatch');
+      return false;
+    }
+
+    // Check host
+    // Special case: *.example.com should match both example.com and www.example.com
+    let hostRegex;
+    if (hostPattern.startsWith('*.')) {
+      // *.example.com matches example.com, www.example.com, sub.example.com, etc.
+      const domain = hostPattern.slice(2); // Remove *.
+      const escapedDomain = domain.replace(/\./g, '\\.');
+      hostRegex = `(.*\\.)?${escapedDomain}`;
+    } else {
+      hostRegex = hostPattern
+        .replace(/\./g, '\\.')  // Escape dots
+        .replace(/\*/g, '.*');  // * matches any characters
+    }
+
+    console.log('Host regex:', hostRegex, 'Testing against:', urlObj.hostname);
+    const hostMatch = new RegExp('^' + hostRegex + '$').test(urlObj.hostname);
+    console.log('Host match:', hostMatch);
+
+    if (!hostMatch) {
+      return false;
+    }
+
+    // Check path
+    const pathRegex = pathPattern
+      .replace(/[.+^${}()|[\]\\]/g, '\\$&')  // Escape special chars
+      .replace(/\\\*/g, '.*');  // * matches any characters
+
+    console.log('Path regex:', pathRegex, 'Testing against:', urlObj.pathname);
+    const pathMatch = new RegExp('^' + pathRegex + '$').test(urlObj.pathname);
+    console.log('Path match:', pathMatch);
+
+    if (!pathMatch) {
+      return false;
+    }
+
+    console.log('FULL MATCH!');
+    return true;
+  } catch (e) {
+    console.error('Error testing pattern:', pattern, e);
+    return false;
   }
 }
