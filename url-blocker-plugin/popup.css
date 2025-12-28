@@ -106,14 +106,12 @@ h2 {
   }
 }
 
-.add-pattern {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
+.pattern-input-section {
+  margin-bottom: 12px;
 }
 
 #urlPattern {
-  flex: 1;
+  width: 100%;
   padding: 8px 12px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
@@ -127,8 +125,66 @@ h2 {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
+.test-url-section {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+#testUrl {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+#testUrl:focus {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+#testUrlBtn {
+  padding: 8px 20px;
+  background-color: #8b5cf6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+  min-width: 80px;
+}
+
+#testUrlBtn:hover {
+  background-color: #7c3aed;
+}
+
+#testUrlBtn:active {
+  background-color: #6d28d9;
+}
+
+.test-result {
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  animation: slideIn 0.3s ease-out;
+  margin-bottom: 16px;
+}
+
+.add-pattern-button-section {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
 #addPattern {
-  padding: 8px 16px;
+  padding: 8px 24px;
   background-color: #3b82f6;
   color: white;
   border: none;
@@ -137,6 +193,8 @@ h2 {
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s;
+  white-space: nowrap;
+  min-width: 120px;
 }
 
 #addPattern:hover {
@@ -145,6 +203,30 @@ h2 {
 
 #addPattern:active {
   background-color: #1d4ed8;
+}
+
+.test-result.blocked {
+  background-color: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.test-result.allowed {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+.test-result.info {
+  background-color: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #93c5fd;
+}
+
+.test-result.error {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
 }
 
 .help-text {
