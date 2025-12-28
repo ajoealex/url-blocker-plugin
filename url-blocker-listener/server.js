@@ -20,15 +20,17 @@ if (process.pkg) {
 // Check if properties file exists, use defaults if not
 let PORT = 3000;
 let MAX_REQUESTS = 10;
+let BIND_INTERFACE = '127.0.0.1';
 
 if (fs.existsSync(propertiesPath)) {
   const properties = PropertiesReader(propertiesPath);
   PORT = properties.get('port') || 3000;
   MAX_REQUESTS = parseInt(properties.get('max_requests')) || 10;
+  BIND_INTERFACE = properties.get('bind_interface') || '127.0.0.1';
   console.log(`Loaded configuration from: ${propertiesPath}`);
 } else {
   console.log(`Warning: app.properties not found at ${propertiesPath}, using defaults`);
-  console.log(`Default port: ${PORT}, Default max_requests: ${MAX_REQUESTS}`);
+  console.log(`Default port: ${PORT}, Default max_requests: ${MAX_REQUESTS}, Default bind_interface: ${BIND_INTERFACE}`);
 }
 
 const app = express();
@@ -125,12 +127,12 @@ app.delete('/cleanup', (req, res) => {
 });
 
 // Start the server
-app.listen(PORT, () => {
-  console.log(`URL Blocker Listener is running on port ${PORT}`);
+app.listen(PORT, BIND_INTERFACE, () => {
+  console.log(`URL Blocker Listener is running on ${BIND_INTERFACE}:${PORT}`);
   console.log(`Maximum requests to retain: ${MAX_REQUESTS}`);
   console.log('Endpoints:');
-  console.log(`  POST   / - Receive blocked URL requests`);
-  console.log(`  GET    / - Retrieve blocked URLs (use ?latest=true for latest only)`);
-  console.log(`  GET    /ping - Health check`);
-  console.log(`  DELETE /cleanup - Clear all requests`);
+  console.log(`  POST   http://${BIND_INTERFACE}:${PORT}/ - Receive blocked URL requests`);
+  console.log(`  GET    http://${BIND_INTERFACE}:${PORT}/ - Retrieve blocked URLs (use ?latest=true for latest only)`);
+  console.log(`  GET    http://${BIND_INTERFACE}:${PORT}/ping - Health check`);
+  console.log(`  DELETE http://${BIND_INTERFACE}:${PORT}/cleanup - Clear all requests`);
 });

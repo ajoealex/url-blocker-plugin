@@ -39,12 +39,12 @@ Together, these components allow users to:
 ┌─────────────────────────────────────┐
 │   Chrome Browser                    │
 │                                     │
-│  ┌──────────────────────────────┐  │
-│  │  URL Blocker Extension       │  │
-│  │  - Pattern Matching          │  │
-│  │  - Request Blocking          │  │
-│  │  - Tab Management            │  │
-│  └──────────────┬───────────────┘  │
+│  ┌──────────────────────────────┐   │
+│  │  URL Blocker Extension       │   │
+│  │  - Pattern Matching          │   │
+│  │  - Request Blocking          │   │
+│  │  - Tab Management            │   │
+│  └──────────────┬───────────────┘   │
 │                 │                   │
 └─────────────────┼───────────────────┘
                   │ HTTP POST
