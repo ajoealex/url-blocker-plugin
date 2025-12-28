@@ -17,13 +17,28 @@
       <button id="resetBtn" class="reset-btn">Reset</button>
     </div>
 
-    <div class="add-pattern">
+    <div class="pattern-input-section">
       <input
         type="text"
         id="urlPattern"
         placeholder="Enter URL pattern (e.g., *://*.example.com/*)"
         autocomplete="off"
       >
+    </div>
+
+    <div class="test-url-section">
+      <input
+        type="text"
+        id="testUrl"
+        placeholder="Enter URL to test (e.g., https://www.example.com/page)"
+        autocomplete="off"
+      >
+      <button id="testUrlBtn">Test</button>
+    </div>
+
+    <div id="testResult" class="test-result" style="display: none;"></div>
+
+    <div class="add-pattern-button-section">
       <button id="addPattern">Add Pattern</button>
     </div>
 
