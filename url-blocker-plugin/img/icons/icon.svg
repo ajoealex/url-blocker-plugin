@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4285f4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1a73e8;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Shield shape -->
+  <path d="M64 10 L110 30 L110 60 Q110 90 64 118 Q18 90 18 60 L18 30 Z"
+        fill="url(#shieldGradient)"
+        stroke="#0d47a1"
+        stroke-width="3"/>
+
+  <!-- Blocking circle with slash -->
+  <circle cx="64" cy="64" r="30" fill="none" stroke="#ff1744" stroke-width="6"/>
+  <line x1="44" y1="44" x2="84" y2="84" stroke="#ff1744" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- URL/Link symbol inside -->
+  <path d="M52 64 L52 58 Q52 54 56 54 L60 54"
+        fill="none"
+        stroke="white"
+        stroke-width="3"
+        stroke-linecap="round"/>
+  <path d="M76 64 L76 70 Q76 74 72 74 L68 74"
+        fill="none"
+        stroke="white"
+        stroke-width="3"
+        stroke-linecap="round"/>
+</svg>

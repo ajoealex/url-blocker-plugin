@@ -4,6 +4,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadReportingSettings();
   await loadCloseTabSettings();
 
+  // Hide warning banner after 5 seconds with fade-out
+  setTimeout(() => {
+    const warningBanner = document.querySelector('.warning-banner');
+    if (warningBanner) {
+      warningBanner.classList.add('fade-out');
+      // Remove from DOM after fade animation completes
+      setTimeout(() => {
+        warningBanner.style.display = 'none';
+      }, 500);
+    }
+  }, 5000);
+
   // Add pattern button click handler
   document.getElementById('addPattern').addEventListener('click', addPattern);
 
@@ -25,6 +37,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Save close tab button handler
   document.getElementById('saveCloseTab').addEventListener('click', saveCloseTabSettings);
+
+  // Reset button handler
+  document.getElementById('resetBtn').addEventListener('click', resetAll);
 });
 
 // Load patterns from storage and display them
@@ -365,5 +380,42 @@ async function saveCloseTabSettings() {
     showMessage('Settings saved and auto-close enabled', 'success');
   } else {
     showMessage('Settings saved successfully', 'success');
+  }
+}
+
+// Reset all settings and rules
+async function resetAll() {
+  // Confirm with user
+  const confirmed = confirm('Are you sure you want to reset all settings and rules? This action cannot be undone.');
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    // Clear all storage
+    await chrome.storage.sync.clear();
+
+    // Reset UI to default state
+    document.getElementById('urlPattern').value = '';
+    document.getElementById('reportEnabled').checked = false;
+    document.getElementById('endpointUrl').value = 'http://localhost:9874';
+    document.getElementById('endpointConfig').style.display = 'none';
+    document.getElementById('closeTabEnabled').checked = false;
+    document.getElementById('closeTabInterval').value = '5';
+    document.getElementById('closeTabConfig').style.display = 'none';
+
+    // Clear patterns display
+    displayPatterns([]);
+
+    // Notify background script to update rules
+    chrome.runtime.sendMessage({ action: 'updateRules' });
+    chrome.runtime.sendMessage({ action: 'updateReporting', enabled: false });
+    chrome.runtime.sendMessage({ action: 'updateCloseTab', enabled: false });
+
+    showMessage('All settings and rules have been reset', 'success');
+  } catch (error) {
+    console.error('Error resetting settings:', error);
+    showMessage('Error resetting settings', 'error');
   }
 }

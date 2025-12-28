@@ -6,6 +6,36 @@ let reportEndpoint = null;
 let closeTabEnabled = false;
 let closeTabInterval = 5;
 
+// Icon paths
+const normalIcon = {
+  "16": "img/icons/icon16.png",
+  "48": "img/icons/icon48.png",
+  "128": "img/icons/icon128.png"
+};
+
+const alertIcon = {
+  "16": "img/icons/icon-alert16.png",
+  "48": "img/icons/icon-alert48.png",
+  "128": "img/icons/icon-alert128.png"
+};
+
+// Function to blink the icon when a URL is blocked
+function blinkIcon() {
+  // Set to alert (red) icon
+  chrome.action.setIcon({ path: alertIcon });
+
+  // Blink pattern: alert for 300ms, normal for 300ms, alert for 300ms, then back to normal
+  setTimeout(() => {
+    chrome.action.setIcon({ path: normalIcon });
+    setTimeout(() => {
+      chrome.action.setIcon({ path: alertIcon });
+      setTimeout(() => {
+        chrome.action.setIcon({ path: normalIcon });
+      }, 300);
+    }, 300);
+  }, 300);
+}
+
 // Initialize rules when extension is installed
 chrome.runtime.onInstalled.addListener(async () => {
   console.log('URL Blocker installed');
@@ -99,6 +129,9 @@ chrome.declarativeNetRequest.onRuleMatchedDebug.addListener(async (details) => {
       type: details.request.type,
       initiator: details.request.initiator
     };
+
+    // Blink the icon to indicate a URL was blocked
+    blinkIcon();
 
     // Send report if reporting is enabled
     if (reportingEnabled) {
