@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "URL Blocker",
+  "version": "1.0.0",
+  "description": "Block websites based on URL patterns",
+  "permissions": [
+    "storage",
+    "declarativeNetRequest",
+    "declarativeNetRequestFeedback",
+    "tabs"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  }
+}

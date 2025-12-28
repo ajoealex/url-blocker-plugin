@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>URL Blocker</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <h1>URL Blocker</h1>
+
+    <div class="add-pattern">
+      <input
+        type="text"
+        id="urlPattern"
+        placeholder="Enter URL pattern (e.g., *://*.example.com/*)"
+        autocomplete="off"
+      >
+      <button id="addPattern">Add Pattern</button>
+    </div>
+
+    <div class="help-text">
+      <p>Pattern examples:</p>
+      <ul>
+        <li><code>*://*.facebook.com/*</code> - Block all Facebook</li>
+        <li><code>*://example.com/*</code> - Block specific domain</li>
+        <li><code>*://*.youtube.com/watch*</code> - Block YouTube videos</li>
+      </ul>
+    </div>
+
+    <div class="patterns-section">
+      <h2>Blocked Patterns</h2>
+      <div id="patternsList"></div>
+      <div id="emptyState" class="empty-state">
+        No patterns added yet. Add a pattern above to start blocking URLs.
+      </div>
+    </div>
+
+    <div class="reporting-section">
+      <h2>Reporting</h2>
+      <div class="checkbox-container">
+        <input type="checkbox" id="reportEnabled">
+        <label for="reportEnabled">Report blocked URLs</label>
+      </div>
+
+      <div id="endpointConfig" class="endpoint-config" style="display: none;">
+        <div class="input-group">
+          <label for="endpointUrl">Endpoint URL:</label>
+          <input
+            type="text"
+            id="endpointUrl"
+            placeholder="http://localhost:9874"
+            autocomplete="off"
+          >
+        </div>
+        <button id="saveEndpoint">Save Settings</button>
+      </div>
+    </div>
+
+    <div class="close-tab-section">
+      <h2>Auto-Close Tabs</h2>
+      <div class="checkbox-container">
+        <input type="checkbox" id="closeTabEnabled">
+        <label for="closeTabEnabled">Close blocked tabs after interval</label>
+      </div>
+
+      <div id="closeTabConfig" class="endpoint-config" style="display: none;">
+        <div class="input-group">
+          <label for="closeTabInterval">Close after (seconds):</label>
+          <input
+            type="number"
+            id="closeTabInterval"
+            placeholder="5"
+            autocomplete="off"
+            min="1"
+            max="3600"
+          >
+        </div>
+        <button id="saveCloseTab">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
