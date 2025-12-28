@@ -1,34 +1,108 @@
-# URL Blocker Listener
+# URL Blocker Project
 
-A Node.js Express server that listens for blocked URL requests from a Chrome plugin and stores them in memory.
+A comprehensive URL blocking solution consisting of a Chrome browser extension and a reporting server.
 
-## Features
+## Architecture
+
+```
+┌─────────────────────────────────────┐
+│   Chrome Browser                    │
+│                                     │
+│  ┌──────────────────────────────┐   │
+│  │  URL Blocker Extension       │   │
+│  │  - Pattern Matching          │   │
+│  │  - Request Blocking          │   │
+│  │  - Tab Management            │   │
+│  └──────────────┬───────────────┘   │
+│                 │                   │
+└─────────────────┼───────────────────┘
+                  │ HTTP POST
+                  │ (Blocked URL Reports)
+                  ▼
+         ┌────────────────────┐
+         │  Listener Server   │
+         │  - Receives Reports│
+         │  - Stores in Memory│
+         │  - Provides API    │
+         └────────────────────┘
+```
+
+---
+
+## URL Blocker Plugin
+
+A Chrome Manifest V3 extension that blocks websites based on URL patterns using Chrome's declarativeNetRequest API.
+
+### Features
+
+- **Pattern-based URL Blocking**: Block websites using flexible URL patterns with wildcard support
+- **Manifest V3 Compliance**: Uses the latest Chrome extension standard with declarativeNetRequest API
+- **Real-time Rule Updates**: Dynamically add/remove blocking rules without restarting the browser
+- **Cross-device Synchronization**: Patterns sync across devices via Chrome Sync storage
+- **Optional Reporting**: Send blocked URL details to a configured reporting server
+- **Server Validation**: Automatic ping check to validate server connectivity before enabling reporting
+- **Auto-Close Tabs**: Automatically close tabs that attempt to access blocked content after a configurable delay
+- **Pattern Testing**: Test URL patterns before adding them to your block list
+
+### Installation
+
+1. Open Chrome and navigate to `chrome://extensions/`
+2. Enable "Developer mode" in the top right
+3. Click "Load unpacked"
+4. Select the `url-blocker-plugin` directory
+5. The extension icon should appear in your toolbar
+
+### Usage
+
+1. Click the URL Blocker extension icon
+2. Enter a URL pattern (e.g., `*://*.facebook.com/*`)
+3. Optionally test the pattern using the URL testing feature
+4. Click "Add Pattern" or press Enter
+5. The website will be immediately blocked across all tabs
+
+### Pattern Examples
+
+- `*://*.facebook.com/*` - Block all Facebook
+- `*://example.com/*` - Block specific domain
+- `*://*.youtube.com/watch*` - Block YouTube videos
+
+---
+
+## URL Blocker Listener
+
+A Node.js Express server that listens for blocked URL requests from the Chrome extension and stores them in memory.
+
+### Features
 
 - Receives blocked URL requests from Chrome extension
 - Stores requests in memory (configurable maximum)
 - Provides API to retrieve all or latest blocked URLs
 - Health check endpoint
 - Cleanup endpoint to clear stored requests
+- Configurable bind interface (localhost, 127.0.0.1, or all interfaces)
 
-## Installation
+### Installation
 
 ```bash
 npm install
 ```
 
-## Configuration
+### Configuration
 
 Edit `app.properties` to configure the server:
 
 ```properties
 # Server port
-port=3000
+port=9874
+
+# Bind interface (localhost, 127.0.0.1, 0.0.0.0 for all interfaces)
+bind_interface=127.0.0.1
 
 # Maximum number of blocked URL requests to retain in memory
 max_requests=10
 ```
 
-## Running the Server
+### Running the Server
 
 Development mode (with auto-reload):
 ```bash
@@ -40,16 +114,16 @@ Production mode:
 npm start
 ```
 
-## Building Standalone Executable
+### Building Standalone Executable
 
 This project uses `pkg` to create standalone executables that don't require Node.js to be installed.
 
-### Build for your current platform:
+**Build for your current platform:**
 ```bash
 npm run build
 ```
 
-### Build for specific platforms:
+**Build for specific platforms:**
 
 **Windows:**
 ```bash
@@ -73,7 +147,7 @@ npm run build:all
 
 The executables will be created in the `dist/` folder.
 
-### Running the executable:
+**Running the executable:**
 
 **Windows:**
 ```bash
@@ -89,9 +163,9 @@ cd dist
 
 **Important:** Make sure to copy the `app.properties` file to the same directory as the executable, as it's required for configuration.
 
-## API Endpoints
+### API Endpoints
 
-### POST /
+**POST /**
 Receive a blocked URL request from the Chrome plugin.
 
 **Request Body:**
@@ -116,7 +190,8 @@ Receive a blocked URL request from the Chrome plugin.
 }
 ```
 
-### GET /
+**GET /**
+
 Retrieve blocked URL requests.
 
 **Query Parameters:**
@@ -155,7 +230,8 @@ Retrieve blocked URL requests.
 }
 ```
 
-### GET /ping
+**GET /ping**
+
 Health check endpoint.
 
 **Response:**
@@ -167,7 +243,8 @@ Health check endpoint.
 }
 ```
 
-### DELETE /cleanup
+**DELETE /cleanup**
+
 Clear all stored blocked URL requests.
 
 **Response:**
@@ -178,7 +255,7 @@ Clear all stored blocked URL requests.
 }
 ```
 
-## Usage Example
+### Usage Example
 
 1. Start the server:
    ```bash
@@ -216,7 +293,7 @@ Clear all stored blocked URL requests.
    curl -X DELETE http://localhost:3000/cleanup
    ```
 
-## Notes
+### Notes
 
 - Requests are stored in memory and will be lost when the server restarts
 - The server maintains a maximum of `max_requests` entries (configurable in app.properties)
