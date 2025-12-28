@@ -215,6 +215,18 @@ async function saveEndpoint() {
     return;
   }
 
+  // If checkbox is checked, do a ping check to validate server access
+  const isChecked = document.getElementById('reportEnabled').checked;
+  if (isChecked) {
+    showMessage('Validating server connection...', 'success');
+
+    const pingSuccess = await pingServer(url);
+    if (!pingSuccess) {
+      showMessage('Server validation failed. Please check the endpoint URL and ensure the server is running.', 'error');
+      return;
+    }
+  }
+
   await chrome.storage.sync.set({
     reportEndpointUrl: url
   });
@@ -226,7 +238,6 @@ async function saveEndpoint() {
   });
 
   // If checkbox is checked, enable reporting now that endpoint is configured
-  const isChecked = document.getElementById('reportEnabled').checked;
   if (isChecked) {
     await chrome.storage.sync.set({ reportingEnabled: true });
 
@@ -238,6 +249,41 @@ async function saveEndpoint() {
     showMessage('Settings saved and reporting enabled', 'success');
   } else {
     showMessage('Settings saved successfully', 'success');
+  }
+}
+
+// Ping server to validate connection
+async function pingServer(baseUrl) {
+  try {
+    // Extract base URL and append /ping endpoint
+    const urlObj = new URL(baseUrl);
+    const pingUrl = `${urlObj.protocol}//${urlObj.host}/ping`;
+
+    const response = await fetch(pingUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      console.error('Ping failed with status:', response.status);
+      return false;
+    }
+
+    const data = await response.json();
+
+    // Validate response format
+    if (data.status === 'ok' && data.message && data.timestamp) {
+      console.log('Server ping successful:', data);
+      return true;
+    } else {
+      console.error('Invalid ping response format:', data);
+      return false;
+    }
+  } catch (error) {
+    console.error('Error pinging server:', error);
+    return false;
   }
 }
 
