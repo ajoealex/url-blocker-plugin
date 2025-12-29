@@ -356,6 +356,29 @@ h2 {
   border-top: 1px solid #e5e7eb;
 }
 
+.listener-banner {
+  background-color: #dbeafe;
+  border: 1px solid #3b82f6;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: #1e40af;
+  text-align: center;
+}
+
+.listener-banner a {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.listener-banner a:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
 .checkbox-container {
   display: flex;
   align-items: center;

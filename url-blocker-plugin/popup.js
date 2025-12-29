@@ -297,8 +297,8 @@ async function saveEndpoint() {
 async function pingServer(baseUrl) {
   try {
     // Extract base URL and append /ping endpoint
-    const urlObj = new URL(baseUrl);
-    const pingUrl = `${urlObj.protocol}//${urlObj.host}/ping`;
+    // const urlObj = new URL(baseUrl);
+    const pingUrl = `${baseUrl}/ping`;
 
     const response = await fetch(pingUrl, {
       method: 'GET',
