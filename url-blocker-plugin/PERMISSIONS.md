@@ -48,16 +48,6 @@ This document explains why each permission is required for the Tab URL Blocker 4
 - **No analytics:** No analytics, tracking, or telemetry of any kind.
 - **Open source:** Full source code is available for review.
 
-## Permission Usage Summary
-
-| Permission | Required | Optional Feature | Always Active |
-|------------|----------|------------------|---------------|
-| storage | ✅ | ❌ | ✅ |
-| declarativeNetRequest | ✅ | ❌ | ✅ |
-| webNavigation | ✅ | ❌ | ✅ |
-| tabs | ❌ | ✅ (auto-close) | ❌ |
-| host_permissions | ✅ | ❌ | ✅ |
-
 ## Security Considerations
 
 1. **Regex patterns:** Users have full control over what patterns to block. The extension does not include any pre-configured blocking rules.
