@@ -143,11 +143,38 @@ chrome.webNavigation.onErrorOccurred.addListener(async (details) => {
 
     console.log('Blocked navigation detected:', details);
 
+    // Verify that this URL matches one of our patterns
+    // This prevents false positives from other extensions or browser features
+    const result = await chrome.storage.sync.get(['blockedPatterns']);
+    const patterns = result.blockedPatterns || [];
+
+    let matchedPattern = null;
+    for (const pattern of patterns) {
+      try {
+        const regex = new RegExp(pattern);
+        if (regex.test(details.url)) {
+          matchedPattern = pattern;
+          break;
+        }
+      } catch (e) {
+        console.error('Error testing pattern:', pattern, e);
+      }
+    }
+
+    // Only proceed if the URL matches one of our patterns
+    if (!matchedPattern) {
+      console.log('URL blocked but does not match our patterns - ignoring:', details.url);
+      return;
+    }
+
+    console.log(`URL matched pattern: ${matchedPattern}`);
+
     const blockedUrl = {
       url: details.url,
       timestamp: new Date().toISOString(),
       tabId: details.tabId,
-      frameId: details.frameId
+      frameId: details.frameId,
+      matchedPattern: matchedPattern
     };
 
     // Blink the icon to indicate a URL was blocked
