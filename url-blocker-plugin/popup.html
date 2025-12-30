@@ -21,7 +21,7 @@
       <input
         type="text"
         id="urlPattern"
-        placeholder="Enter URL pattern (e.g., *://*.example.com/*)"
+        placeholder="Enter regex pattern (e.g., .*facebook\.com.*)"
         autocomplete="off"
       >
     </div>
@@ -30,7 +30,7 @@
       <input
         type="text"
         id="testUrl"
-        placeholder="Enter URL to test (e.g., https://www.example.com/page)"
+        placeholder="Enter URL to test (e.g., https://www.facebook.com/page)"
         autocomplete="off"
       >
       <button id="testUrlBtn">Test</button>
@@ -43,12 +43,17 @@
     </div>
 
     <div class="help-text">
-      <p>Pattern examples:</p>
+      <p>Regex pattern examples:</p>
       <ul>
-        <li><code>*://*.facebook.com/*</code> - Block all Facebook</li>
-        <li><code>*://example.com/*</code> - Block specific domain</li>
-        <li><code>*://*.youtube.com/watch*</code> - Block YouTube videos</li>
+        <li><code>.*facebook.*</code> - Block all Facebook</li>
+        <li><code>.*google.*</code> - Block all Google</li>
+        <li><code>.*youtube\.com/watch.*</code> - Block YouTube watch pages</li>
+        <li><code>.*reddit\.com.*</code> - Block all Reddit</li>
+        <li><code>.*twitter.*</code> - Block Twitter/X</li>
       </ul>
+      <p style="margin-top: 8px; font-size: 11px; color: #666;">
+        💡 Tip: Use <code>.*</code> for wildcards, <code>\.</code> for literal dots
+      </p>
     </div>
 
     <div class="patterns-section">

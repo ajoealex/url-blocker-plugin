@@ -1,5 +1,68 @@
+// Update blocking rules directly from popup (bypass inactive service worker)
+async function updateBlockingRulesFromPopup() {
+  console.log('🔧 Starting rule update from popup...');
+
+  try {
+    console.log('📦 Getting patterns from storage...');
+    const result = await chrome.storage.sync.get(['blockedPatterns']);
+    const patterns = result.blockedPatterns || [];
+    console.log(`📋 Found ${patterns.length} patterns:`, patterns);
+
+    // Get existing dynamic rules
+    console.log('🔍 Checking existing dynamic rules...');
+    const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
+    const existingRuleIds = existingRules.map(r => r.id);
+    console.log(`Found ${existingRules.length} existing dynamic rules`);
+
+    // Create new rules
+    console.log('🏗️ Creating new rules...');
+    const newRules = patterns.map((pattern, index) => {
+      console.log(`  Using regex pattern: ${pattern}`);
+      return {
+        id: index + 1,
+        priority: 1,
+        action: { type: 'block' },
+        condition: {
+          regexFilter: pattern,
+          resourceTypes: ['main_frame', 'sub_frame']
+        }
+      };
+    });
+
+    // Update rules atomically - remove old and add new in single call
+    const updateOptions = {};
+    if (existingRuleIds.length > 0) {
+      updateOptions.removeRuleIds = existingRuleIds;
+      console.log(`🗑️ Removing ${existingRuleIds.length} existing rules...`);
+    }
+    if (newRules.length > 0) {
+      updateOptions.addRules = newRules;
+      console.log(`➕ Adding ${newRules.length} new dynamic rules...`);
+    }
+
+    // Only call updateDynamicRules if there's something to do
+    if (existingRuleIds.length > 0 || newRules.length > 0) {
+      await chrome.declarativeNetRequest.updateDynamicRules(updateOptions);
+      console.log(`✅ Successfully updated blocking rules from popup!`);
+    } else {
+      console.log('⚠ No rules to update');
+    }
+
+    // Verify rules were added
+    const verifyRules = await chrome.declarativeNetRequest.getDynamicRules();
+    console.log(`✓ Verification: ${verifyRules.length} dynamic rules now active (persist across restarts)`);
+
+  } catch (error) {
+    console.error('❌ Error creating rules from popup:', error);
+    console.error('Stack:', error.stack);
+  }
+}
+
 // Load and display patterns on popup open
 document.addEventListener('DOMContentLoaded', async () => {
+  // Update rules directly from popup (bypass service worker)
+  await updateBlockingRulesFromPopup();
+
   await loadPatterns();
   await loadReportingSettings();
   await loadCloseTabSettings();
@@ -117,13 +180,13 @@ async function addPattern() {
   const pattern = input.value.trim();
 
   if (!pattern) {
-    showTestResult('Please enter a URL pattern', 'error');
+    showTestResult('Please enter a regex pattern', 'error');
     return;
   }
 
-  // Validate pattern format
-  if (!isValidPattern(pattern)) {
-    showTestResult('Invalid pattern format. Use patterns like *://*.example.com/*', 'error');
+  // Validate regex pattern format
+  if (!isValidRegex(pattern)) {
+    showTestResult('Invalid regex pattern. Example: .*google.* or ^https?://.*facebook\\.com/.*$', 'error');
     return;
   }
 
@@ -139,7 +202,10 @@ async function addPattern() {
   patterns.push(pattern);
   await chrome.storage.sync.set({ blockedPatterns: patterns });
 
-  // Notify background script to update rules
+  // Update rules immediately from popup
+  await updateBlockingRulesFromPopup();
+
+  // Also notify background script to update rules
   chrome.runtime.sendMessage({ action: 'updateRules' });
 
   input.value = '';
@@ -155,21 +221,24 @@ async function deletePattern(index) {
   patterns.splice(index, 1);
   await chrome.storage.sync.set({ blockedPatterns: patterns });
 
-  // Notify background script to update rules
+  // Update rules immediately from popup
+  await updateBlockingRulesFromPopup();
+
+  // Also notify background script to update rules
   chrome.runtime.sendMessage({ action: 'updateRules' });
 
   displayPatterns(patterns);
   showMessage('Pattern deleted successfully', 'success');
 }
 
-// Validate URL pattern
-function isValidPattern(pattern) {
-  // Basic validation for URL match patterns
-  // Should contain protocol and path
-  const hasProtocol = pattern.startsWith('*://') || pattern.startsWith('http://') || pattern.startsWith('https://');
-  const hasPath = pattern.includes('/');
-
-  return hasProtocol && hasPath && pattern.length > 5;
+// Validate regex pattern
+function isValidRegex(pattern) {
+  try {
+    new RegExp(pattern);
+    return true;
+  } catch (e) {
+    return false;
+  }
 }
 
 // Show temporary message
@@ -471,17 +540,22 @@ async function testUrl() {
     return;
   }
 
-  // Validate pattern format
-  if (!isValidPattern(pattern)) {
-    showTestResult('Invalid pattern format. Use patterns like *://*.example.com/*', 'error');
+  // Validate regex pattern format
+  if (!isValidRegex(pattern)) {
+    showTestResult('Invalid regex pattern. Example: .*google.* or ^https?://.*facebook\\.com/.*$', 'error');
     return;
   }
 
-  // Test the input pattern against the URL
-  if (matchesPattern(url, pattern)) {
-    showTestResult(`Pattern matched`, 'blocked');
-  } else {
-    showTestResult('Pattern not matched', 'allowed');
+  // Test the regex pattern against the URL
+  try {
+    const regex = new RegExp(pattern);
+    if (regex.test(url)) {
+      showTestResult(`Pattern matched`, 'blocked');
+    } else {
+      showTestResult('Pattern not matched', 'allowed');
+    }
+  } catch (e) {
+    showTestResult('Error testing pattern: ' + e.message, 'error');
   }
 }
 
@@ -498,79 +572,3 @@ function showTestResult(message, type) {
   }, 3000);
 }
 
-// Check if a URL matches a pattern (Chrome URL match pattern format)
-function matchesPattern(url, pattern) {
-  try {
-    // Parse the pattern: <scheme>://<host><path>
-    const patternParts = pattern.match(/^(\*|https?|file|ftp):\/\/([^\/]+)(\/.*)?$/);
-    if (!patternParts) {
-      console.log('Pattern parse failed:', pattern);
-      return false;
-    }
-
-    const [, schemePattern, hostPattern, pathPattern = '/*'] = patternParts;
-    console.log('Parsing pattern:', pattern);
-    console.log('Pattern parts:', { schemePattern, hostPattern, pathPattern });
-
-    // Parse the URL
-    let urlObj;
-    try {
-      urlObj = new URL(url);
-    } catch (e) {
-      return false;
-    }
-
-    console.log('URL parts:', {
-      protocol: urlObj.protocol,
-      hostname: urlObj.hostname,
-      pathname: urlObj.pathname
-    });
-
-    // Check scheme
-    if (schemePattern !== '*' && schemePattern !== urlObj.protocol.slice(0, -1)) {
-      console.log('Scheme mismatch');
-      return false;
-    }
-
-    // Check host
-    // Special case: *.example.com should match both example.com and www.example.com
-    let hostRegex;
-    if (hostPattern.startsWith('*.')) {
-      // *.example.com matches example.com, www.example.com, sub.example.com, etc.
-      const domain = hostPattern.slice(2); // Remove *.
-      const escapedDomain = domain.replace(/\./g, '\\.');
-      hostRegex = `(.*\\.)?${escapedDomain}`;
-    } else {
-      hostRegex = hostPattern
-        .replace(/\./g, '\\.')  // Escape dots
-        .replace(/\*/g, '.*');  // * matches any characters
-    }
-
-    console.log('Host regex:', hostRegex, 'Testing against:', urlObj.hostname);
-    const hostMatch = new RegExp('^' + hostRegex + '$').test(urlObj.hostname);
-    console.log('Host match:', hostMatch);
-
-    if (!hostMatch) {
-      return false;
-    }
-
-    // Check path
-    const pathRegex = pathPattern
-      .replace(/[.+^${}()|[\]\\]/g, '\\$&')  // Escape special chars
-      .replace(/\\\*/g, '.*');  // * matches any characters
-
-    console.log('Path regex:', pathRegex, 'Testing against:', urlObj.pathname);
-    const pathMatch = new RegExp('^' + pathRegex + '$').test(urlObj.pathname);
-    console.log('Path match:', pathMatch);
-
-    if (!pathMatch) {
-      return false;
-    }
-
-    console.log('FULL MATCH!');
-    return true;
-  } catch (e) {
-    console.error('Error testing pattern:', pattern, e);
-    return false;
-  }
-}

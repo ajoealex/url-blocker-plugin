@@ -37,17 +37,29 @@ function blinkIcon() {
 }
 
 // Initialize rules when extension is installed
-chrome.runtime.onInstalled.addListener(async () => {
-  console.log('URL Blocker installed');
-  await updateBlockingRules();
-  await initializeReporting();
-  await initializeCloseTab();
+chrome.runtime.onInstalled.addListener(async (details) => {
+  console.log('URL Blocker installed/updated:', details.reason);
+  try {
+    await updateBlockingRules();
+    await initializeReporting();
+    await initializeCloseTab();
+    console.log('✓ Installation complete');
+  } catch (error) {
+    console.error('✗ Installation failed:', error);
+  }
 });
 
 // Initialize on startup
 chrome.runtime.onStartup.addListener(async () => {
-  await initializeReporting();
-  await initializeCloseTab();
+  console.log('Browser started, initializing extension...');
+  try {
+    await updateBlockingRules();
+    await initializeReporting();
+    await initializeCloseTab();
+    console.log('✓ Startup complete');
+  } catch (error) {
+    console.error('✗ Startup failed:', error);
+  }
 });
 
 // Listen for messages from popup
@@ -72,14 +84,9 @@ async function updateBlockingRules() {
     const result = await chrome.storage.sync.get(['blockedPatterns']);
     const patterns = result.blockedPatterns || [];
 
-    // Get current rules
+    // Get current dynamic rules
     const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
     const existingRuleIds = existingRules.map(rule => rule.id);
-
-    // Remove all existing rules
-    await chrome.declarativeNetRequest.updateDynamicRules({
-      removeRuleIds: existingRuleIds
-    });
 
     // Create new rules from patterns - only block main_frame and sub_frame
     const newRules = patterns.map((pattern, index) => ({
@@ -89,7 +96,7 @@ async function updateBlockingRules() {
         type: 'block'
       },
       condition: {
-        urlFilter: pattern,
+        regexFilter: pattern,
         resourceTypes: [
           'main_frame',
           'sub_frame'
@@ -97,18 +104,27 @@ async function updateBlockingRules() {
       }
     }));
 
-    // Add new rules
+    // Update rules atomically - remove old and add new in single call
+    const updateOptions = {};
+    if (existingRuleIds.length > 0) {
+      updateOptions.removeRuleIds = existingRuleIds;
+    }
     if (newRules.length > 0) {
-      await chrome.declarativeNetRequest.updateDynamicRules({
-        addRules: newRules
-      });
+      updateOptions.addRules = newRules;
     }
 
-    console.log(`Updated blocking rules: ${newRules.length} patterns active`);
+    // Only call updateDynamicRules if there's something to do
+    if (existingRuleIds.length > 0 || newRules.length > 0) {
+      await chrome.declarativeNetRequest.updateDynamicRules(updateOptions);
+      console.log(`✓ Updated blocking rules: ${newRules.length} patterns active (dynamic rules - persist across restarts)`);
+    } else {
+      console.log('⚠ No rules to update');
+    }
   } catch (error) {
-    console.error('Error updating blocking rules:', error);
+    console.error('✗ Error updating blocking rules:', error);
   }
 }
+
 
 // Update rules when storage changes (synced across devices)
 chrome.storage.onChanged.addListener((changes, namespace) => {
