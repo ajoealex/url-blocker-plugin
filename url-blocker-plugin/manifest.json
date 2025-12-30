@@ -1,12 +1,12 @@
 {
   "manifest_version": 3,
   "name": "Tab URL Blocker 404",
-  "version": "1.3.3",
+  "version": "2.0.0",
   "description": "Block websites based on URL patterns",
   "permissions": [
     "storage",
     "declarativeNetRequest",
-    "declarativeNetRequestFeedback",
+    "webNavigation",
     "tabs"
   ],
   "host_permissions": [

@@ -133,17 +133,21 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
   }
 });
 
-// Listen for blocked requests
-chrome.declarativeNetRequest.onRuleMatchedDebug.addListener(async (details) => {
-  console.log('Rule matched debug event:', details);
+// Listen for blocked requests using webNavigation API (works in production!)
+// When a request is blocked by declarativeNetRequest, webNavigation.onErrorOccurred fires
+// with error: "net::ERR_BLOCKED_BY_CLIENT"
+chrome.webNavigation.onErrorOccurred.addListener(async (details) => {
+  // Check if this error is due to our blocking rules
+  if (details.error === 'net::ERR_BLOCKED_BY_CLIENT' &&
+      (details.frameId === 0 || details.frameType === 'sub_frame')) {
 
-  if (details.request) {
+    console.log('Blocked navigation detected:', details);
+
     const blockedUrl = {
-      url: details.request.url,
+      url: details.url,
       timestamp: new Date().toISOString(),
-      tabId: details.request.tabId,
-      type: details.request.type,
-      initiator: details.request.initiator
+      tabId: details.tabId,
+      frameId: details.frameId
     };
 
     // Blink the icon to indicate a URL was blocked
@@ -157,15 +161,15 @@ chrome.declarativeNetRequest.onRuleMatchedDebug.addListener(async (details) => {
       console.log('Reporting disabled, not tracking blocked URL');
     }
 
-    // Close tab after interval if enabled
-    if (closeTabEnabled && details.request.tabId >= 0) {
-      console.log(`Scheduling tab ${details.request.tabId} to close in ${closeTabInterval} seconds`);
+    // Close tab after interval if enabled (only for main frame)
+    if (closeTabEnabled && details.frameId === 0 && details.tabId >= 0) {
+      console.log(`Scheduling tab ${details.tabId} to close in ${closeTabInterval} seconds`);
       setTimeout(async () => {
         try {
-          await chrome.tabs.remove(details.request.tabId);
-          console.log(`Closed tab ${details.request.tabId}`);
+          await chrome.tabs.remove(details.tabId);
+          console.log(`Closed tab ${details.tabId}`);
         } catch (error) {
-          console.error(`Error closing tab ${details.request.tabId}:`, error);
+          console.error(`Error closing tab ${details.tabId}:`, error);
         }
       }, closeTabInterval * 1000);
     }
